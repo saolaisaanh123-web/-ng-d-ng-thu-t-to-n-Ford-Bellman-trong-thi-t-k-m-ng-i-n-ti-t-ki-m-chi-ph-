@@ -1,55 +1,51 @@
-# Phiếu kiểm chứng phần thuật toán của Phan Đức Hoàng
+# Kiểm chứng Bellman–Ford và số liệu thực nghiệm
 
-Dùng phiếu này để viết kiểm thử cho mô-đun độc lập và đối chiếu số liệu trên giao diện, slide và hình thực nghiệm. Mỗi ca bắt đầu với dữ liệu mới. Cung được xét theo thứ tự ghi trong bảng. Thư mục, tên hàm và cấu trúc trả về tuân theo hợp đồng tích hợp của nhóm.
+**Kết quả thực chạy trên Node.js v24.22.3: 16/16 ca đạt.** Bộ kiểm thử nhập trực tiếp ba hàm của mô-đun thuật toán và đọc cùng tệp JSON dùng cho panel. Chạy lại từ thư mục gốc của repo:
 
-## 1. Ví dụ dùng chung khi chạy thử và thuyết trình
+```sh
+node --test Source/tests/bellmanFord.test.mjs
+```
 
-Bốn trạm S, A, B, T có năm tuyến có hướng. Chi phí trên mỗi tuyến dùng cùng một đơn vị nghìn đồng cho một lượt 1 MWh quy ước. Người dùng chọn nguồn S và đích T.
+## 1. Đối chứng độc lập cho ví dụ thuyết trình
 
-| Mã tuyến | Từ | Đến | Ban đầu | Sau điều chỉnh |
-|---|---|---|---:|---:|
-| e1 | S | A | 4 | 4 |
-| e2 | S | B | 2 | 2 |
-| e3 | B | A | 1 | 5 |
-| e4 | A | T | 3 | 3 |
-| e5 | B | T | 8 | 8 |
+Sáu cung của mạng mẫu tạo đúng ba đường S → T. Từ S có ba lựa chọn A, B hoặc C. Sau mỗi lựa chọn, mọi trạm trung gian chỉ có đúng một cung đi tiếp. Phép cộng tay sau đây cho đáp án độc lập với chương trình. Đơn vị là nghìn đồng/MWh.
 
-Có thể kiểm tra độc lập bằng cách liệt kê đường đi. Từ S đi qua A thì chỉ còn một cách đến T. Từ S đi qua B thì có thể qua A hoặc đến T trực tiếp. Đồ thị này không có chu trình nên ba trường hợp đã bao quát mọi đường đi S đến T.
-
-| Đường đi khả thi | Chi phí ban đầu | Chi phí sau điều chỉnh |
+| Đường đi | Khi B → A có phí 1 | Khi B → A có phí 5 |
 |---|---:|---:|
-| S → A → T | 4 + 3 = 7 | 4 + 3 = 7 |
 | S → B → A → T | 2 + 1 + 3 = **6** | 2 + 5 + 3 = 10 |
-| S → B → T | 2 + 8 = 10 | 2 + 8 = 10 |
+| S → A → T | 4 + 3 = 7 | 4 + 3 = **7** |
+| S → C → T | 3 + 6 = 9 | 3 + 6 = 9 |
 
-Ở lần chạy đầu, khi xét e3, nhãn của A giảm từ 4 xuống 3, tiền nhiệm đổi từ S sang B. Khi xét e4 tiếp theo, T nhận nhãn 6 và tiền nhiệm A. Nếu dùng cập nhật tại chỗ theo thứ tự e1 đến e5, lượt quét thứ hai không đổi nhãn nào. Khi sửa e3 và chạy lại từ đầu, ứng dụng phải thay cả chi phí, tiền nhiệm và nét tô trên sơ đồ.
+Với thứ tự cung e1 đến e6 trong JSON, ở ca đầu e1 gán B = 2, e2 gán A = 3 và e3 gán T = 6 ngay trong lượt quét thứ nhất. Lượt thứ hai không có cập nhật nên thuật toán dừng. Ở ca tăng phí, T lần lượt nhận 10 qua A và 9 qua C trong lượt thứ nhất. Sang lượt thứ hai, A đã có nhãn 4 nhờ cung S → A nên e3 giảm nhãn của T xuống 7. Sự khác biệt giữa các lượt xuất phát từ thứ tự xét cung và việc cập nhật nhãn tại chỗ.
 
-## 2. Bảng ca kiểm thử đã thiết kế
+## 2. Kết quả theo ca
 
-Ký hiệu `S→A(4)` chỉ một cung có chi phí 4. Dùng costModel = net cho ca 07, 08, 09, 14 và operating cho các ca còn lại. Các ca độc lập dùng nguồn S, đích T trừ khi có ghi chú. Kết quả thực tế và kết luận thuộc lần chạy mã nguồn, để người chạy điền kèm mã commit. Cột đáp án là dữ liệu đối chiếu đã xác định trước.
+Trong bảng, `S→T(3)` là một cung hướng từ S đến T, chi phí 3. Trừ khi có ghi chú, nguồn là S và đích cần tra là T. Các thông số không hữu hạn được lưu nội bộ trong Map và chuyển thành trạng thái có tên khi trả về đường đi.
 
-| Ca | Đầu vào hoặc thao tác | Đáp án cần đối chiếu | Thực tế | Kết luận |
+| Ca | Dữ liệu | Đáp án đã xác định | Thực tế quan sát qua kiểm thử | Kết luận |
 |---|---|---|---|---|
-| 01 · Một trạm | Chỉ có S, không có cung. Chọn S làm đích. | `finite`, chi phí 0, danh sách đỉnh [S], danh sách cạnh rỗng. | Chưa chạy | Chờ |
-| 02 · Chi phí dương | Mạng e1–e5 ban đầu. | Khoảng cách theo thứ tự S, A, B, T là [0, 3, 2, 6]. Đến T theo [e2, e3, e4]. | Chưa chạy | Chờ |
-| 03 · Đổi một chi phí | Sau ca 02, sửa e3 thành 5 rồi chạy lại. | [0, 4, 2, 7]. Tuyến đến T theo [e1, e4]. | Chưa chạy | Chờ |
-| 04 · Đích cô lập | S→A(2), có thêm T. | T có trạng thái `unreachable`, không hiển thị tuyến. A vẫn có chi phí 2. | Chưa chạy | Chờ |
-| 05 · Hai đường đồng hạng | S→A(1), S→B(1), A→T(2), B→T(2). | Tổng 3. Với thứ tự đã cho và chỉ cập nhật khi nhỏ hơn, tiền nhiệm của T vẫn là A. | Chưa chạy | Chờ |
-| 06 · Trọng số 0 | S→A(0), A→T(2), S→T(4). | S → A → T, tổng 2. Nhãn của A bằng 0 và A đến được từ S. | Chưa chạy | Chờ |
-| 07 · Ưu đãi một chiều | Kịch bản chi phí ròng giả định có hướng. S→T(1), S→A(4), A→T(−5). | S → A → T, tổng −1, không có chu trình âm. | Chưa chạy | Chờ |
-| 08 · Chu trình âm tới được | S→A(1), A→B(−3), B→A(1), B→T(4), S→C(7). | Chu trình A → B → A có tổng −2. A, B, T có trạng thái `unbounded`. S và C vẫn có nghiệm hữu hạn lần lượt 0 và 7. | Chưa chạy | Chờ |
-| 09 · Chu trình âm ở thành phần khác | S→T(3), X→Y(−4), Y→X(1). | T có chi phí 3. X, Y là `unreachable`. Cờ phát hiện chu trình âm **tới được từ S** là sai. | Chưa chạy | Chờ |
-| 10 · Hai tuyến song song | p và q đều đi từ S tới T, lần lượt có chi phí 7 và 2. | `edgeIds` chỉ chứa q, tổng 2. Kiểm tra cả mã tuyến trên sơ đồ. | Chưa chạy | Chờ |
-| 11 · Nguồn hoặc đích lạ | Với mạng ca 02, chạy từ Z. Ở lượt riêng, chạy từ S rồi tra đích Z. | Từng thao tác báo lỗi định danh tương ứng. Đích lạ khác với đích tồn tại nhưng cô lập ở ca 04. | Chưa chạy | Chờ |
-| 12 · Đầu vào sai | Tạo bốn biến thể riêng của ca 02: trùng ID đỉnh, trùng ID cạnh, cung đến Z, chi phí là chuỗi “abc”. | Mỗi biến thể bị từ chối khi kiểm tra dữ liệu, UI chỉ rõ mục cần sửa. | Chưa chạy | Chờ |
-| 13 · Nhiều vòng, đồ thị lớn | 500 trạm n0…n499. Với i từ 498 giảm đến 0, ghi cung ni→n(i+1), chi phí 1. Chọn n0 và n499. Tắt lịch sử. | Chi phí đến ni bằng i, đường đến n499 gồm 499 cung. Ghi thời gian đo được cùng phiên bản môi trường. | Chưa chạy | Chờ |
-| 14 · Về lại nguồn qua chu trình âm | S→S(−1), S→T(3). Tra lần lượt S và T. | Cả hai là `unbounded`, kể cả khi đích trùng nguồn. | Chưa chạy | Chờ |
+| 01 · Một trạm | Chỉ S, không có cung, tra S | Đường rỗng cạnh, phí 0 | [S], 0 cạnh, 0 lượt quét | Đạt |
+| 02 · Mạng mẫu | Nạp sampleGraph.json, e2 có phí 1 | S → B → A → T, tổng 6 | [e1,e2,e3], tổng 6. Nhãn [S,A,B,C,T] = [0,3,2,3,6], dừng sau 2 lượt | Đạt |
+| 03 · Sửa phí | Cùng mạng, tăng e2 thành 5 rồi chạy lại | S → A → T, tổng 7 | [e4,e3], tổng 7. Nhãn [0,4,2,3,7]. Đối tượng kết quả lần trước vẫn có tổng 6 | Đạt |
+| 04 · Cô lập | S→A(2), có T đứng riêng | T không đến được, A có phí 2. Chọn A làm nguồn thì S không đến được | T trả unreachable, hai mảng rỗng và tổng null. Đi từ A về S cũng trả unreachable | Đạt |
+| 05 · Đồng hạng | S→A(1), S→B(1), A→T(2), B→T(2) | Hai tuyến tổng 3, giữ tuyến đầu gặp | S → A → T, [e1,e3], tổng 3 | Đạt |
+| 06 · Chi phí 0 | S→A(0), A→T(2), S→T(4) | A có nhãn 0, T có nhãn 2 | Đường qua A, tổng 2 | Đạt |
+| 07 · Phí ròng | Chế độ net, S→T(1), S→A(4,25), A→T(−5,5) | A có ưu đãi khi đi đến T, tổng 4,25 − 5,5 = −1,25 | S → A → T, tổng −1,25, cờ chu trình âm tắt | Đạt |
+| 08 · Chu trình âm tới được | S→A(1), A→B(−3), B→A(1), B→T(4), S→C(7), chế độ net | Lặp A → B → A giảm 2 mỗi vòng. A, B, T vô cận dưới. S và C có nghiệm hữu hạn | Cờ bật. affectedNodes đúng {A,B,T}, ba trạm trả unbounded. Đến S và C lần lượt tốn 0 và 7 | Đạt |
+| 09 · Chu trình âm ở xa | S→T(3), X→Y(−4), Y→X(1), chế độ net | X, Y ngoài tầm nguồn, T có phí 3 | Cờ tắt, tập bị ảnh hưởng rỗng, X và Y unreachable, S → T có phí 3 | Đạt |
+| 10 · Cung song song | e1 và e2 đều từ S đến T, phí lần lượt 7 và 2 | Chọn đúng tuyến e2 | edgeIds = [e2], tổng 2 | Đạt |
+| 11 · Sai ID khi tra | Chạy từ Z. Ở phép thử riêng, tra đích Z từ kết quả ca 02 | Hai lỗi ứng với thao tác | UNKNOWN_SOURCE và UNKNOWN_TARGET | Đạt |
+| 12 · Dữ liệu sai | 11 biến thể gồm graph null, vô hướng, rỗng đỉnh, trùng ID trạm, ID thừa khoảng trắng, đầu mút lạ, chuỗi chi phí, NaN, Infinity, phí vận hành âm, trùng ID cung | Từng dữ liệu sai bị từ chối, dữ liệu chuẩn được chấp nhận | 11 biến thể trả ok = false, mỗi issue có code/field/message, chạy thuật toán ném INVALID_GRAPH. Mẫu chuẩn trả ok = true | Đạt |
+| 13 · Hiệu năng | Chuỗi n0 → … → n499, mọi cung phí 1. Đưa 499 cung vào theo thứ tự ngược. Tắt trace | Nhãn ni bằng i, đường đến n499 gồm 499 cung | Đúng đủ 500 nhãn và 499 mã cung theo thứ tự đi, 499 lượt quét, 0 bản ghi lịch sử | Đạt |
+| 14 · Nguồn nằm trên chu trình âm | S→S(−1), S→T(3), chế độ net | Đi vòng tại S làm giảm phí tùy ý, kể cả khi tra S | Cả S và T trả unbounded, tổng null | Đạt |
+| 15 · Phát và tua | Mạng mẫu thêm X không tới được cùng cung X→S(1). Áp giá trị mới cho từng bước rồi dùng giá trị cũ theo chiều ngược | Đủ ba trạng thái updated/unchanged/skipped. Khi kết thúc khớp kết quả lõi. Tua ngược khôi phục nhãn lẫn tiền nhiệm | So sánh từng bước đúng lượt, cung, đầu mút, nhãn và tiền nhiệm. Hai Map khớp ở cả hai đầu. Dữ liệu đồ thị gốc còn nguyên | Đạt |
+| 16 · Tràn số | S→A và A→T đều có phí Number.MAX_VALUE | Hai số riêng lẻ hữu hạn, phép cộng vượt giới hạn biểu diễn | Ném COST_OUT_OF_RANGE | Đạt |
 
-Khi kiểm tra mọi tuyến hữu hạn, đối chiếu đỉnh đầu, đỉnh cuối, hướng và ID của từng cung, rồi cộng lại chi phí từ chính bộ dữ liệu đầu vào. Khi có nhiều nghiệm, cho phép đổi đường sau khi đổi thứ tự cung nếu tổng tối ưu còn đúng. Ở ca 13, đo tối thiểu năm lượt sau một lượt làm nóng và ghi trung vị kèm số vòng quét. Phép đo này chỉ mô tả môi trường đã chạy.
+**Thời gian ca 13.** Với Node.js v24.22.3 trong môi trường đám mây, chạy một lượt làm nóng rồi năm lượt đo, ghi nhận trung vị **15,00 ms**. Thời gian chỉ tính cuộc gọi `runBellmanFord(..., {trace: false})`, bao gồm cả xác thực đầu vào. Ngưỡng đạt của phép thử là kết quả toán học đúng. Thời gian phụ thuộc máy, phiên bản Node và tải hệ thống.
 
-## 3. Nghiệm thu khi ghép giao diện
+## 3. Kiểm tra sau khi ghép vào trang của nhóm
 
-- Chọn ca 02, chạy từng bước đến e3 rồi lùi một bước. Bảng, thông báo và dấu nhận biết cạnh phải cùng trở về thời điểm trước khi A đổi tiền nhiệm. Thử tạm dừng, đổi tốc độ, chạy đến cuối rồi đặt lại.
-- Chụp cùng một bố cục trước và sau ca 03. Mỗi hình cần ghi nguồn, đích, chi phí và mã tuyến thay đổi. Mô tả cho người viết Word là chi phí tối ưu tăng từ 6 lên 7 sau khi e3 tăng 4 đơn vị. Tuyến tối ưu mới đi qua A trực tiếp từ S.
-- Sau ca 02, chuyển sang ca 04 hoặc 08. Kiểm tra giao diện xóa tuyến cũ và giải thích đúng vì sao không thể trả về một tuyến hữu hạn cho T. Ở ca 08, chọn C để kiểm tra các đích có nghiệm hữu hạn vẫn xem được.
-- Chạy lại trong bản sao sạch của nhánh bàn giao, mở trên trình duyệt thứ hai và kiểm tra nút, chú giải, bảng khoảng cách khi thu hẹp cửa sổ. Ghi thiết bị/trình duyệt thực sự dùng. Khi lỗi, lưu mã ca, commit, bước tái hiện, mong đợi, thực tế, file phụ trách và kết quả kiểm lại sau sửa.
+1. Chạy mạng mẫu từng bước qua e1, e2 và e3. Lùi lại một bước để kiểm tra bảng, thông báo và cạnh nổi bật cùng trở về thời điểm trước khi T nhận nhãn 6.
+2. Sửa e2 thành 5, chạy lại và đối chiếu hai hình chụp cùng bố cục với bảng ở mục 1. Xác minh đường mới chỉ có e4, e3 và tổng bằng 7. Đặt lại rồi tải mẫu ban đầu.
+3. Sau ca thành công, đổi sang ca 04 và 08. Kiểm tra tuyến cũ được xóa, cảnh báo phân biệt trạm cô lập với đích bị chu trình âm ảnh hưởng. Ở ca 08, chọn C để xác minh người dùng vẫn xem được lộ trình hữu hạn.
+4. Ghi phiên bản của trang chính, trình duyệt và thiết bị dùng để nghiệm thu. Nếu lỗi, ghi mã ca, bước tái hiện, mong đợi, thực tế, file phụ trách và kết quả chạy lại. Kết quả 16 ca phía trên đo mô-đun độc lập. Các bước trong mục này dành cho chủ trang thực hiện sau khi tích hợp.

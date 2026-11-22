@@ -1,0 +1,19 @@
+{
+  "directed": true,
+  "costModel": "operating",
+  "nodes": [
+    { "id": "S", "label": "Trạm S", "x": 80, "y": 195 },
+    { "id": "A", "label": "Trạm A", "x": 410, "y": 115 },
+    { "id": "B", "label": "Trạm B", "x": 220, "y": 80 },
+    { "id": "C", "label": "Trạm C", "x": 295, "y": 300 },
+    { "id": "T", "label": "Trạm T", "x": 595, "y": 195 }
+  ],
+  "edges": [
+    { "id": "e1", "from": "S", "to": "B", "cost": 2 },
+    { "id": "e2", "from": "B", "to": "A", "cost": 1 },
+    { "id": "e3", "from": "A", "to": "T", "cost": 3 },
+    { "id": "e4", "from": "S", "to": "A", "cost": 4 },
+    { "id": "e5", "from": "S", "to": "C", "cost": 3 },
+    { "id": "e6", "from": "C", "to": "T", "cost": 6 }
+  ]
+}
