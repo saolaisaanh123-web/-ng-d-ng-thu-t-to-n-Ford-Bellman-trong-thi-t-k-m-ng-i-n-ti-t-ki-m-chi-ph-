@@ -1,7 +1,7 @@
 # Phần thiết kế của Phan Đức Hoàng · 51.01.104.131
 
 **Ứng dụng thuật toán Ford–Bellman trong thiết kế mạng điện tiết kiệm chi phí**
-Bản đề xuất cho nhóm HCMUE duyệt trước khi viết chương trình. Chưa xác nhận phân chia module, slide hoặc danh sách thuyết trình cuối cùng.
+Tài liệu khảo sát ban đầu, lưu để đối chiếu quy định và lịch sử thiết kế. Mạng bốn trạm và phân ranh file bên dưới thuộc đề xuất ban đầu. Khi chạy thử, ghép code hoặc làm slide, dùng [hợp đồng hiện hành](hop-dong.md), [mạng năm trạm đã kiểm chứng](kiem-thu.md) và [kịch bản thuyết trình cập nhật](../Slides/hoang-demo.md).
 
 ## 1. Đối chiếu ba tài liệu
 

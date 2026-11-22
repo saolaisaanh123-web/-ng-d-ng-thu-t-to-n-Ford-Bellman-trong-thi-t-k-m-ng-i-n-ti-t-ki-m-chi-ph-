@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mô phỏng mạng điện · Bellman–Ford</title>
+  <link rel="stylesheet" href="./panel.css">
+  <script type="module" src="./demo.mjs"></script>
+</head>
+<body class="bf-demo">
+  <header class="bf-demo-header">
+    <div class="bf-header-inner">
+      <div class="bf-brand"><span class="bf-brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m5 23 9-16 13 11-10 7-12-2Z M14 7l3 18"/><g fill="currentColor"><circle cx="5" cy="23" r="2.5"/><circle cx="14" cy="7" r="2.5"/><circle cx="27" cy="18" r="2.5"/><circle cx="17" cy="25" r="2.5"/></g></svg></span> Phòng mô phỏng mạng điện</div>
+      <nav aria-label="Tài liệu"><button id="bf-help-open" type="button">Hướng dẫn</button></nav>
+    </div>
+  </header>
+  <main class="bf-shell">
+    <header class="bf-demo-intro">
+      <p class="bf-eyebrow">Bản thử độc lập · Phan Đức Hoàng</p>
+      <h1>Tuyến truyền tải tối ưu</h1>
+      <p>Chọn hai trạm để tìm tuyến có chi phí thấp nhất và theo dõi từng bước của Bellman–Ford.</p>
+    </header>
+    <div class="bf-scenarios">
+      <label class="bf-field" for="bf-scenario"><span>Kịch bản mạng điện</span>
+        <select id="bf-scenario" disabled>
+          <option value="base">Mạng 5 trạm · Phí cơ sở</option>
+          <option value="raised">Tăng phí tuyến B → A</option>
+          <option value="isolated">Trạm đích bị cô lập</option>
+          <option value="rebate">Ưu đãi một chiều</option>
+          <option value="cycle">Chu trình phí ròng âm</option>
+          <option value="custom" disabled hidden>Mạng vừa sửa phí</option>
+        </select>
+      </label>
+      <form id="bf-price-form">
+        <label class="bf-field" for="bf-edge-cost"><span>Phí B → A (nghìn đồng/MWh)</span>
+          <input type="number" step="any" id="bf-edge-cost" min="0" required disabled>
+        </label>
+        <button type="submit" class="bf-button" id="bf-apply" disabled>Áp dụng phí</button>
+      </form>
+    </div>
+    <p id="bf-scenario-description" class="bf-scenario-description" aria-live="polite"></p>
+    <div id="bf-host" aria-label="Mô phỏng Bellman–Ford">Đang tải mô hình…</div>
+  </main>
+  <dialog id="bf-help" aria-labelledby="bf-help-heading">
+    <h2 id="bf-help-heading">Cách chạy thử</h2>
+    <ol>
+      <li>Chọn mạng phí cơ sở, trạm nguồn S và trạm đích T. Nhấn <strong>Tính tuyến</strong> để xem tổng phí và các cung được chọn.</li>
+      <li>Chạy từng bước để xem chi phí đến mỗi trạm thay đổi. Nút lùi hoàn tác một bước trên bảng.</li>
+      <li>Tăng phí B → A lên 5, áp dụng và tính lại. Đối chiếu tuyến mới với đường ban đầu.</li>
+      <li>Thử trạm cô lập hoặc chu trình âm. Trong kịch bản chu trình âm, chuyển đích sang C để xem một trạm vẫn có nghiệm hữu hạn.</li>
+    </ol>
+    <p>Phí truyền tải là dữ liệu giả định cho 1 MWh. Sơ đồ mô tả các tuyến có thể chọn. Công suất, điện áp và tổn thất nằm ngoài mô hình.</p>
+    <form method="dialog"><button class="bf-button" autofocus>Đóng</button></form>
+  </dialog>
+</body>
+</html>

@@ -1,0 +1,54 @@
+<section class="bf-panel" id="bf-panel" aria-label="Mô phỏng Bellman–Ford">
+  <div class="bf-toolbar">
+    <label class="bf-field"><span>Trạm nguồn</span><select id="bf-source"></select></label>
+    <label class="bf-field"><span>Trạm đích</span><select id="bf-target"></select></label>
+    <button type="button" class="bf-button bf-primary" id="bf-run">Tính tuyến</button>
+  </div>
+  <div class="bf-workspace">
+    <section class="bf-map-card" aria-labelledby="bf-map-title">
+      <div class="bf-card-heading">
+        <h2 id="bf-map-title">Sơ đồ mạng điện</h2>
+        <span class="bf-meta" id="bf-counts"></span>
+      </div>
+      <svg class="bf-graph" id="bf-graph" role="img" aria-label="Sơ đồ các trạm và chi phí trên từng cung"></svg>
+      <div class="bf-legend" id="bf-legend" aria-label="Chú giải sơ đồ">
+        <span><i class="bf-key bf-key-line" aria-hidden="true"></i>Cung truyền tải</span>
+        <span><i class="bf-key bf-key-current" aria-hidden="true"></i>Đang xét</span>
+        <span><i class="bf-key bf-key-path" aria-hidden="true"></i>Tuyến tối ưu</span>
+      </div>
+      <div class="bf-playback" role="group" aria-label="Phát lại từng bước">
+        <button type="button" class="bf-button" id="bf-first">Từng bước</button>
+        <button type="button" class="bf-button" id="bf-prev" aria-label="Lùi một bước">Lùi</button>
+        <button type="button" class="bf-button" id="bf-next" aria-label="Tiến một bước">Tiếp</button>
+        <button type="button" class="bf-button" id="bf-play">Phát</button>
+        <label class="bf-speed">Tốc độ <select id="bf-speed">
+          <option value="1600">0,5×</option>
+          <option value="800" selected>1×</option>
+          <option value="400">2×</option>
+        </select></label>
+        <button type="button" class="bf-button" id="bf-reset">Đặt lại</button>
+      </div>
+      <div class="bf-step-info">
+        <span id="bf-progress" class="bf-meta"></span>
+        <p id="bf-message" role="status"></p>
+      </div>
+    </section>
+    <div class="bf-sidebar">
+      <section class="bf-result-card" id="bf-result" aria-labelledby="bf-result-title" aria-live="polite">
+        <div class="bf-card-heading"><h2 id="bf-result-title">Kết quả tuyến</h2></div>
+        <p class="bf-status" id="bf-status"></p>
+        <p class="bf-cost-line"><strong class="bf-cost" id="bf-cost"></strong> <span id="bf-unit" class="bf-unit">nghìn đồng/MWh</span></p>
+        <p class="bf-route" id="bf-route"></p>
+        <p class="bf-detail" id="bf-detail"></p>
+      </section>
+      <section class="bf-table-card" aria-labelledby="bf-table-title">
+        <div class="bf-card-heading"><h2 id="bf-table-title">Bảng khoảng cách</h2></div>
+        <div class="bf-table-scroll"><table id="bf-table" aria-labelledby="bf-table-title">
+          <thead><tr><th scope="col">Trạm</th><th scope="col">Chi phí</th><th scope="col">Trước</th><th scope="col">Cung</th></tr></thead>
+          <tbody></tbody>
+        </table></div>
+        <p class="bf-table-note">Chi phí tính theo nghìn đồng/MWh.</p>
+      </section>
+    </div>
+  </div>
+</section>
