@@ -2,18 +2,21 @@
 
 **Phiếu dựng slide và tập demo • Phan Đức Hoàng • 51.01.104.131**
 
-Phần trình bày nối tiếp đoạn giới thiệu bài toán của nhóm. Hoàng dùng bốn khung dưới đây để thống nhất với Trần Chí Minh Tân về số slide, thứ tự, phông chữ và ký hiệu, sau đó mới dựng vào bộ PowerPoint chung. Các số dưới đây dùng nghìn đồng/MWh. Đồ thị mẫu biểu diễn phí truyền tải giả định cho 1 MWh, mỗi mũi tên chỉ một chiều được phép.
+Bộ [PowerPoint của Hoàng](Bellman-Ford-Phan-Duc-Hoang.pptx) có bảy slide 16:9 để ghép sau phần giới thiệu đề tài của nhóm. Mở **View → Notes** hoặc **Presenter View** để xem thông điệp, lời trình bày, cách chỉ hình, câu chuyển và thời lượng của từng slide. Thời lượng nói dự kiến là 3 phút 32 giây. Bảng demo trực tiếp phía dưới là kịch bản 7 phút cho cả nhóm. Khi demo ngay ở slide 6, tính thời gian thao tác vào phần demo một lần.
 
-## Bốn khung trình chiếu
+## Storyboard bảy slide
 
-| Tiêu đề trên màn chiếu | Dựng hình và chữ | Lời dẫn của Hoàng |
-|---|---|---|
-| 1. Từ trạm S đến trạm T hết bao nhiêu? | Đặt S bên trái, B phía trên, A giữa, C phía dưới, T bên phải. Vẽ sáu mũi tên có nhãn phí. Cho A cao hơn đường S–T để thấy rõ S→A. Chú thích nguồn dữ liệu giả định. | “Với cùng 1 MWh, em cộng phí trên các cung đi qua. Từ S đến T có ba cách. Nếu một cung tăng phí thì lựa chọn tốt nhất có thể đổi.” |
-| 2. Khi nào A nhận nhãn mới? | Một lưu đồ với các nút khởi tạo → quét cung → so sánh → cập nhật nhãn và tiền nhiệm → quyết định quét tiếp → kiểm tra chu trình âm → truy tuyến. Phóng to hai cung S→B và B→A. Hiện từng phép tính bằng hiệu ứng xuất hiện. | “Ban đầu chỉ S có nhãn 0. Cung đầu đưa B xuống 2. Với B→A, phí ứng viên bằng 2 + 1 = 3, nhỏ hơn vô cùng. A nhận nhãn 3 và ghi nhớ B qua e2. Lùi một bước để nhìn lại giá trị trước đó.” |
-| 3. Một lần tăng phí đổi cả tuyến | Dùng hai ảnh của cùng một panel sau khi chạy. Giữ nguyên mức thu phóng và vị trí trạm. Dưới hình trái ghi ‘B→A = 1 • S→B→A→T • 6’. Dưới hình phải ghi ‘B→A = 5 • S→A→T • 7’. Dùng ảnh thực nghiệm 01 và 03 trong thư mục Anh. Bảng bên dưới là dữ liệu đối chiếu. | “Phí trên e2 tăng 4. Nếu giữ tuyến cũ sẽ tốn 10. Chuyển sang tuyến qua A trực tiếp chỉ tốn 7, cao hơn kết quả cũ 1 và thấp hơn việc giữ tuyến cũ 3.” |
-| 4. Khi nào mô hình trả được một chi phí? | Ba ô kết quả dùng cả chữ và ký hiệu: tuyến hữu hạn, đích không tới được (+∞), phí không có cận dưới (−∞). Ghi hai dòng về giả định phí ròng và giới hạn công suất. | “T chỉ có cung đi vào nên từ T không thể đi tới S. Trong một kịch bản ưu đãi riêng, nếu đi vòng làm phí giảm mãi, chỉ những đích đi tiếp được từ vòng ấy mới mất nghiệm hữu hạn. Mô hình hiện phục vụ so sánh phí tuyến.” |
+| Slide | Hình chính và cách kể | Thời gian |
+|---|---|---:|
+| 1. Câu hỏi S → T | Cho người xem dò ba hành trình trên mạng năm trạm trước khi biết kết quả. | 24 giây |
+| 2. Mô hình hóa | Ghép hai trạm và một tuyến truyền tải với hai đỉnh B, A và cung phí 1 nghìn đồng/MWh. | 25 giây |
+| 3. Nới lỏng | Theo lưu đồ khởi tạo, so sánh ứng viên, lưu tiền nhiệm, dừng, kiểm tra chu trình âm và truy vết. | 39 giây |
+| 4. Tuyến rẻ nhất ở biểu phí cơ sở | Lần theo các cung tô đậm và cộng 2 + 1 + 3. | 30 giây |
+| 5. Đổi biểu phí | So hai sơ đồ cùng bố cục. Phí B→A tăng lên 5. Theo biểu phí mới, tuyến cũ tốn 10, tuyến mới tốn 7. | 31 giây |
+| 6. Quan sát panel | Theo năm dấu trên ảnh chụp chương trình, từ nguồn/đích đến bảng và kết quả. | 31 giây |
+| 7. Phạm vi kết quả | Giải thích ý nghĩa của số 6, bài toán cây khung và trường hợp Dijkstra có lợi thế. | 32 giây |
 
-Khi dựng hình với PowerPoint Shapes, thêm mũi tên, nhãn số và chú giải trước khi tô đậm tuyến. Giữ nguyên chiều của e3 là A→T trong cả hai hình. Tư liệu ảnh thực tế cần ghi tên tác giả và quyền sử dụng. Hình sơ đồ giải thuật, dữ liệu mô phỏng và ảnh panel cần ghi đúng nguồn tạo ra từng loại.
+Các lưu đồ, đỉnh, cung, trọng số và biểu tượng trạm trong PowerPoint là các đối tượng chỉnh sửa được. Ảnh ở slide 6 chụp từ panel độc lập trên Chromium. Khi ghép vào bộ slide chung, dùng **Keep Source Formatting** để giữ màu và bố cục. HCMUE cùng tên học phần, tên Hoàng và số trang của cụm slide nằm ở chân trang.
 
 ## Đáp án đối chiếu khi diễn tập
 
