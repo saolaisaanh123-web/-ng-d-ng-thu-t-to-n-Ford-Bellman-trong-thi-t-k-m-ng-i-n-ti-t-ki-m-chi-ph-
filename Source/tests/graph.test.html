@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="vi">
+<meta charset="utf-8">
+<title>Kiểm thử hình học SVG của mạng điện</title>
+<h1>Kiểm thử bộ vẽ SVG</h1>
+<p id="status" role="status">Đang chạy…</p>
+<ol id="cases"></ol>
+<svg id="map" width="680" height="340" aria-label="Mạng của ca vừa chạy"></svg>
+<script type="module">
+import { drawGraph } from "../hoang/graph.mjs";
+
+const svg = document.querySelector("#map");
+let failures = 0;
+
+function check(condition, message) {
+  if (!condition) throw new Error(message);
+}
+
+function test(label, run) {
+  const line = document.createElement("li");
+  try {
+    run();
+    line.textContent = label + " — đạt";
+  } catch (error) {
+    failures++;
+    line.textContent = label + " — lỗi: " + error.message;
+  }
+  document.querySelector("#cases").append(line);
+}
+
+function expectDisjoint(boxes) {
+  for (let i = 0; i < boxes.length; i++) {
+    const a = boxes[i];
+    for (const b of boxes.slice(i + 1)) {
+      check(a.x + a.width <= b.x || b.x + b.width <= a.x ||
+        a.y + a.height <= b.y || b.y + b.height <= a.y, "Hai ký hiệu chồng nhau");
+    }
+  }
+}
+
+function render(nodes, edges, state = {}) {
+  const graph = { directed: true, nodes, edges };
+  const original = JSON.stringify(graph);
+  drawGraph(svg, graph, state);
+  check(svg.querySelectorAll("[data-node-id]").length === nodes.length, "Thiếu trạm");
+  check(svg.querySelectorAll("[data-edge-id]").length === edges.length, "Thiếu cung");
+  const marks = Array.from(svg.querySelectorAll("[data-node-id]"), g => g.querySelector("circle, rect"));
+  const fees = Array.from(svg.querySelectorAll("[data-edge-id] rect"));
+  expectDisjoint([...marks, ...fees].map(shape => shape.getBBox()));
+  check(JSON.stringify(graph) === original, "Đồ thị đầu vào đã thay đổi");
+}
+
+test("Dữ liệu thiếu hoặc đầu mút lạ", () => {
+  for (const graph of [null, { directed: true, nodes: [], edges: [] },
+    { directed: true, nodes: [{id: "A"}], edges: [{id: "e", from: "A", to: "Z", cost: 0}] }]) {
+    drawGraph(svg, graph);
+    check(svg.textContent.includes("chưa hợp lệ") && !svg.querySelector("[data-edge-id]"), "Thiếu thông báo");
+  }
+});
+test("Trạm quá sát nhau, thiếu tọa độ hoặc tọa độ cực trị", () => {
+  render([{id:"A", x:0, y:0}, {id:"B", x:0.0001, y:0}, {id:"C", x:500, y:10}, {id:"D"}], []);
+  render([{id:"A", x:-Number.MAX_VALUE, y:0}, {id:"B", x:Number.MAX_VALUE, y:0}], []);
+  render([{id:"A", x:0, y:0}, {id:"B", x:Number.MIN_VALUE, y:0}], []);
+});
+test("Hai cung chéo cắt nhau ở trung điểm", () => {
+  render([{id:"A", x:0, y:0}, {id:"B", x:0, y:100}, {id:"C", x:100, y:0}, {id:"D", x:100, y:100}],
+    [{id:"e1", from:"A", to:"D", cost:4}, {id:"e2", from:"B", to:"C", cost:8}]);
+});
+test("Cung song song và ngược chiều với nhãn phí dài", () => {
+  render([{id:"A", x:5, y:0}, {id:"B", x:5, y:200}],
+    [{id:"e", from:"A", to:"B", cost:9999}, {id:"p", from:"A", to:"B", cost:8888},
+     {id:"rev", from:"B", to:"A", cost:3333}], {pathEdgeIds:["p"]});
+  const chosen = svg.querySelectorAll(".bf-path");
+  check(chosen.length === 1 && chosen[0].dataset.edgeId === "p", "Sai mã cung tô đậm");
+});
+test("Mười bốn tự khuyên tại cùng một trạm", () => {
+  render([{id:"A"}], Array.from({length:14}, (_, i) => ({id:"e"+i, from:"A", to:"A", cost:i})));
+  const view = svg.viewBox.baseVal, drawing = svg.getBBox();
+  check(drawing.x >= view.x && drawing.y >= view.y && drawing.x + drawing.width <= view.x + view.width &&
+    drawing.y + drawing.height <= view.y + view.height, "Ký hiệu ra ngoài khung");
+});
+const count = document.querySelector("#cases").children.length;
+document.querySelector("#status").textContent = (count - failures) + "/" + count + " ca đạt.";
+</script>
+</html>

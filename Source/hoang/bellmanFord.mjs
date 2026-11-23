@@ -69,12 +69,44 @@ function failure(code, message) {
   return Object.assign(new Error(message), { code });
 }
 
-function addCost(distance, cost) {
+// Giá trị thập phân của một phí = units × 10^exponent.
+// Ví dụ 0.12 thành 12 × 10^-2; cách tách này cũng đọc được ký pháp 1e-7.
+function decimalParts(value) {
+  const [mantissa, power = '0'] = String(value).split('e');
+  const [whole, fraction = ''] = mantissa.split('.');
+  return { units: BigInt(whole + fraction), exponent: Number(power) - fraction.length };
+}
+
+function unitsAt(parts, exponent) {
+  return parts.units * 10n ** BigInt(parts.exponent - exponent);
+}
+
+function addCost(distance, edge, decimalSums) {
+  const cost = edge.cost;
+  if (cost === 0) return distance;
+  if (distance === 0) return cost;
   const sum = distance + cost;
-  if (!Number.isFinite(sum)) {
-    throw failure("COST_OUT_OF_RANGE", "Tổng phí vượt phạm vi biểu diễn của JavaScript.");
+  if (Number.isSafeInteger(distance) && Number.isSafeInteger(cost) && Number.isSafeInteger(sum)) return sum;
+
+  // Chi phí cung cố định trong một lần chạy. Dùng lại tổng nếu nhãn đầu cung chưa đổi.
+  const previous = decimalSums.get(edge);
+  if (previous?.distance === distance) return previous.sum;
+
+  // Cộng theo cùng đơn vị thập phân để một vòng có tổng phí 0 không bị làm tròn thành vòng âm.
+  const left = decimalParts(distance);
+  const right = decimalParts(cost);
+  const exponent = Math.min(left.exponent, right.exponent);
+  const units = unitsAt(left, exponent) + unitsAt(right, exponent);
+  const rounded = Number(units + 'e' + exponent);
+  if (Number.isFinite(rounded)) {
+    const stored = decimalParts(rounded);
+    const common = Math.min(exponent, stored.exponent);
+    if (unitsAt({ units, exponent }, common) === unitsAt(stored, common)) {
+      decimalSums.set(edge, { distance, sum: rounded });
+      return rounded;
+    }
   }
-  return sum;
+  throw failure("COST_OUT_OF_RANGE", "Tổng phí nằm ngoài phạm vi hoặc độ chính xác của kiểu Number.");
 }
 
 function describeStep(edge, start, oldDistance, candidate, outcome) {
@@ -91,13 +123,13 @@ function describeStep(edge, start, oldDistance, candidate, outcome) {
 
 // Sau V−1 lượt, các đầu nhận còn giảm được là hạt giống.
 // Mọi đỉnh đi tiếp được từ một hạt giống cũng có chi phí không có cận dưới.
-function findAffectedNodes(graph, distances) {
+function findAffectedNodes(graph, distances, decimalSums) {
   const outgoing = new Map(graph.nodes.map(node => [node.id, []]));
   const affected = new Set();
   for (const edge of graph.edges) {
     outgoing.get(edge.from).push(edge.to);
     const start = distances.get(edge.from);
-    if (start !== Infinity && addCost(start, edge.cost) < distances.get(edge.to)) {
+    if (start !== Infinity && addCost(start, edge, decimalSums) < distances.get(edge.to)) {
       affected.add(edge.to);
     }
   }
@@ -127,10 +159,12 @@ export function runBellmanFord(graph, sourceId, { trace = true } = {}) {
   }
   distances.set(sourceId, 0);
   const steps = [];
+  const decimalSums = new Map();
   let passes = 0;
+  let changed = true;
 
   for (let pass = 1; pass < graph.nodes.length; pass++) {
-    let changed = false;
+    changed = false;
     for (const edge of graph.edges) {
       const start = distances.get(edge.from);
       const oldDistance = distances.get(edge.to);
@@ -138,7 +172,7 @@ export function runBellmanFord(graph, sourceId, { trace = true } = {}) {
       let outcome = "skipped";
       let candidate = Infinity;
       if (start !== Infinity) {
-        candidate = addCost(start, edge.cost);
+        candidate = addCost(start, edge, decimalSums);
         outcome = "unchanged";
         if (candidate < oldDistance) {
           distances.set(edge.to, candidate);
@@ -160,7 +194,8 @@ export function runBellmanFord(graph, sourceId, { trace = true } = {}) {
     if (!changed) break;
   }
 
-  const affectedNodes = findAffectedNodes(graph, distances);
+  // Một lượt trọn vẹn không giảm nhãn nào đã chứng minh không còn cung cải thiện.
+  const affectedNodes = changed ? findAffectedNodes(graph, distances, decimalSums) : new Set();
   const status = new Map();
   for (const { id } of graph.nodes) {
     if (affectedNodes.has(id)) {
@@ -175,12 +210,20 @@ export function runBellmanFord(graph, sourceId, { trace = true } = {}) {
 }
 
 export function reconstructPath(result, targetId) {
+  if (typeof result?.status?.has !== "function" || typeof result.status.get !== "function" ||
+      typeof result.distances?.get !== "function" || typeof result.predecessors?.get !== "function" ||
+      !Number.isInteger(result.distances.size) || !result.status.has(result.sourceId)) {
+    throw failure("INVALID_RESULT", "Cần kết quả đã tính bằng Bellman–Ford.");
+  }
   if (!result.status.has(targetId)) {
     throw failure("UNKNOWN_TARGET", "Trạm đích chưa có trong mạng.");
   }
   const status = result.status.get(targetId);
-  if (status !== "finite") {
+  if (status === "unreachable" || status === "unbounded") {
     return { status, nodeIds: [], edgeIds: [], totalCost: null };
+  }
+  if (status !== "finite" || !Number.isFinite(result.distances.get(targetId))) {
+    throw failure("INVALID_RESULT", "Trạng thái hoặc nhãn chi phí của trạm đích không hợp lệ.");
   }
 
   const nodeIds = [targetId];
@@ -188,7 +231,8 @@ export function reconstructPath(result, targetId) {
   let current = targetId;
   while (current !== result.sourceId) {
     const previous = result.predecessors.get(current);
-    if (!previous || nodeIds.length >= result.distances.size) {
+    if (!previous || typeof previous.edgeId !== "string" || !result.status.has(previous.nodeId) ||
+        nodeIds.length >= result.distances.size) {
       throw failure("INVALID_RESULT", "Chuỗi tiền nhiệm không dẫn về trạm nguồn.");
     }
     edgeIds.push(previous.edgeId);

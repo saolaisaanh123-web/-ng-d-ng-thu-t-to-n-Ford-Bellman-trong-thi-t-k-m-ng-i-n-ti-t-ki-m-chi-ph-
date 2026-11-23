@@ -1,5 +1,3 @@
-import { mountPanel } from "./panel.mjs";
-
 const host = document.querySelector("#bf-host");
 const scenario = document.querySelector("#bf-scenario");
 const price = document.querySelector("#bf-edge-cost");
@@ -35,11 +33,34 @@ async function getResource(path) {
   return response;
 }
 
+async function loadSample() {
+  const response = await getResource("../data/sampleGraph.json");
+  try {
+    return await response.json();
+  } catch (error) {
+    if (error instanceof SyntaxError) throw new Error("Tệp sampleGraph.json có cú pháp JSON không hợp lệ.");
+    throw error;
+  }
+}
+
 async function start() {
-  const [html, sample] = await Promise.all([
+  const modules = Promise.all([import("./panel.mjs"), import("./bellmanFord.mjs")]).catch(() => {
+    throw new Error("Không tải được mô-đun mô phỏng. Hãy kiểm tra các tệp .mjs và mở demo.html bằng Live Server.");
+  });
+  const [html, sample, [{ mountPanel }, { validateGraph }]] = await Promise.all([
     getResource("./panel.html").then(response => response.text()),
-    getResource("../data/sampleGraph.json").then(response => response.json())
+    loadSample(),
+    modules
   ]);
+  const validation = validateGraph(sample);
+  if (!validation.ok) {
+    const { field, message } = validation.issues[0];
+    throw new Error(`sampleGraph.json, ${field}: ${message}`);
+  }
+  // Các nút đổi phí của bản thử luôn thao tác trên cung B → A của mạng mẫu.
+  if (!sample.edges.some(edge => edge.id === "e2" && edge.from === "B" && edge.to === "A")) {
+    throw new Error("Mạng mẫu cần có cung e2 từ B đến A để thử các biểu phí.");
+  }
   host.innerHTML = html;
   let graph = makeScenario(sample, "base");
   const panel = mountPanel(host, graph);
@@ -71,5 +92,6 @@ async function start() {
 }
 
 start().catch(error => {
-  host.textContent = `Lỗi mở bản thử. ${error.message} Hãy mở trang qua máy chủ HTTP.`;
+  host.setAttribute("role", "alert");
+  host.textContent = `Lỗi mở bản thử. ${error.message}`;
 });

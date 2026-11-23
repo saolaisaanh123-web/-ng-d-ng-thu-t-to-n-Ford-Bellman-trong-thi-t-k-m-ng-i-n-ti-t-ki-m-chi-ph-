@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="vi">
+<head><meta charset="utf-8"><title>Kiểm thử vòng đời panel</title></head>
+<body>
+  <h1>Kiểm thử vòng đời panel</h1>
+  <p id="status" role="status">Đang chạy…</p>
+  <div id="fixture"></div>
+  <script type="module">
+    import { mountPanel } from "../hoang/panel.mjs";
+
+    const host = document.querySelector("#fixture");
+    const status = document.querySelector("#status");
+    const control = id => host.querySelector("#bf-" + id);
+    const waitForTick = () => new Promise(resolve => setTimeout(resolve, 600));
+
+    function check(ok, message) {
+      if (!ok) throw new Error(message);
+    }
+
+    async function test() {
+      const [fragment, graph] = await Promise.all([
+        fetch("../hoang/panel.html").then(r => r.text()),
+        fetch("../data/sampleGraph.json").then(r => r.json())
+      ]);
+      host.innerHTML = fragment;
+      const first = mountPanel(host, graph);
+      let active;
+      try {
+        control("speed").value = "400";
+        control("play").click();
+        active = mountPanel(host, graph);
+        await waitForTick();
+        check(control("progress").textContent === "Chưa chạy", "Bộ đếm của phiên cũ vẫn cập nhật panel.");
+
+        first.destroy();
+        control("run").click();
+        check(control("cost").textContent === "6", "Tháo phiên cũ ảnh hưởng đến phiên mới.");
+        control("prev").click();
+        check(control("progress").textContent.includes("Bước 12/12"), "Lùi từ kết quả chưa về cuối lịch sử.");
+        control("first").click();
+        control("next").click();
+        check(control("progress").textContent.includes("Bước 1/12"), "Một lần bấm Tiếp phải đi đúng một bước.");
+        control("play").click();
+        active.setGraph({ directed: true, nodes: [{id: "X"}], edges: [] });
+        await waitForTick();
+        check(control("progress").textContent === "Chưa chạy", "Lịch sử cũ vẫn chạy sau khi thay mạng.");
+        control("run").click();
+        check(control("cost").textContent === "0" && control("route").textContent === "X", "Sai tuyến sau khi thay mạng.");
+        status.textContent = "Đạt: gắn lại, tháo phiên cũ, lùi từ kết quả và thay mạng khi đang phát.";
+      } finally {
+        first.destroy();
+        active?.destroy();
+      }
+    }
+    test().catch(error => { status.textContent = "Lỗi: " + error.message; });
+  </script>
+</body>
+</html>

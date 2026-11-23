@@ -1,6 +1,7 @@
 import { reconstructPath, runBellmanFord, validateGraph } from "./bellmanFord.mjs";
 import { drawGraph } from "./graph.mjs";
 
+const mountedPanels = new WeakMap();
 const numberFormat = new Intl.NumberFormat("vi-VN", { maximumSignificantDigits: 17 });
 
 function formatCost(cost) {
@@ -18,39 +19,67 @@ function fillOptions(select, nodes, preferred) {
   select.value = preferred;
 }
 
-function renderRows(body, nodes, distances, predecessors, activeNode) {
-  const rows = document.createDocumentFragment();
+function buildRows(body, nodes) {
+  const fragment = document.createDocumentFragment();
+  const rows = new Map();
   for (const { id } of nodes) {
     const row = document.createElement("tr");
-    if (id === activeNode) row.dataset.current = "true";
-    const node = document.createElement("th");
-    node.scope = "row";
-    node.textContent = id;
-    row.append(node);
-
-    const before = predecessors.get(id);
-    for (const value of [formatCost(distances.get(id)), before?.nodeId ?? "—", before?.edgeId ?? "—"]) {
-      const cell = document.createElement("td");
-      cell.textContent = value;
-      row.append(cell);
-    }
-    rows.append(row);
+    const heading = document.createElement("th");
+    heading.scope = "row";
+    heading.textContent = id;
+    row.append(heading);
+    for (let i = 0; i < 3; i++) row.insertCell();
+    rows.set(id, row);
+    fragment.append(row);
   }
-  body.replaceChildren(rows);
+  body.replaceChildren(fragment);
+  return rows;
+}
+
+function setText(element, value) {
+  if (element.textContent !== value) element.textContent = value;
+}
+
+function updateRows(rows, distances, predecessors, activeNode) {
+  for (const [id, row] of rows) {
+    if (id === activeNode) row.dataset.current = "true";
+    else delete row.dataset.current;
+    const previous = predecessors.get(id);
+    setText(row.cells[1], formatCost(distances.get(id)));
+    setText(row.cells[2], previous?.nodeId ?? "—");
+    setText(row.cells[3], previous?.edgeId ?? "—");
+  }
 }
 
 export function mountPanel(root, initialGraph) {
-  const q = name => root.querySelector("#bf-" + name);
+  const panel = root?.matches?.("#bf-panel") ? root : root?.querySelector?.("#bf-panel");
+  if (!panel) throw new Error("Hãy chèn panel.html vào vùng chứa trước khi gọi mountPanel.");
+  mountedPanels.get(panel)?.destroy();
+  // Giữ các móc DOM của đúng fragment và báo rõ phần tử thiếu ngay khi ghép.
+  const controls = new Map();
+  for (const name of [
+    "source", "target", "run", "graph", "counts", "first", "prev", "next", "play", "speed",
+    "reset", "progress", "message", "result", "status", "cost", "unit", "route", "detail", "table"
+  ]) {
+    const element = panel.querySelector("#bf-" + name);
+    if (!element) throw new Error("Thiếu phần tử #bf-" + name + " trong panel.html.");
+    controls.set(name, element);
+  }
+  const q = name => controls.get(name);
   const source = q("source");
   const target = q("target");
-  const tableBody = q("table").tBodies[0];
+  const tableBody = q("table").tBodies?.[0];
+  if (!tableBody) throw new Error("Bảng #bf-table trong panel.html cần có phần tbody.");
   const listeners = new AbortController();
   let graph = null;
   let result = null;
+  let hasTrace = false;
+  let finished = false;
+  let rows;
   let timer = null;
   let errorText = "";
 
-  // 0 = khởi tạo, 1..N = sau lần xét cung, N+1 = sau kiểm tra chu trình âm.
+  // Con trỏ đếm số cung đã phát lại. Khi hoàn tất, hiển thị các Map của lõi.
   // Hai Map này chỉ dùng cho giao diện, độc lập với kết quả thuật toán.
   let cursor = 0;
   let distances = new Map();
@@ -63,6 +92,7 @@ export function mountPanel(root, initialGraph) {
 
   function rewind() {
     cursor = 0;
+    finished = false;
     distances = new Map(graph?.nodes.map(({ id }) => [id, id === source.value ? 0 : Infinity]));
     predecessors = new Map();
   }
@@ -70,14 +100,17 @@ export function mountPanel(root, initialGraph) {
   function clearRun() {
     pause();
     result = null;
+    hasTrace = false;
     errorText = "";
     rewind();
   }
 
-  function solve() {
-    if (result) return true;
+  function solve(trace) {
+    // Chỉ tạo lịch sử khi thực sự phát lại. Đổi đích dùng kết quả của cùng nguồn.
+    if (result && (!trace || hasTrace)) return true;
     try {
-      result = runBellmanFord(graph, source.value);
+      result = runBellmanFord(graph, source.value, { trace });
+      hasTrace = trace;
       errorText = "";
       return true;
     } catch (error) {
@@ -131,22 +164,24 @@ export function mountPanel(root, initialGraph) {
     }
   }
 
-  function render() {
-    const finished = result && cursor === result.steps.length + 1;
-    const step = result?.steps[cursor - 1];
+  function renderPlayButton() {
+    setText(q("play"), timer === null ? "Phát" : "Tạm dừng");
+    q("play").setAttribute("aria-pressed", String(timer !== null));
+  }
+
+  function render(refreshTable = true) {
+    const step = finished ? null : result?.steps[cursor - 1];
     const path = finished ? reconstructPath(result, target.value) : null;
     const runControls = ["run", "first", "play", "reset", "source", "target", "speed"];
     for (const name of runControls) q(name).disabled = !graph;
-    q("prev").disabled = !result || cursor === 0;
+    q("prev").disabled = !result || (!finished && cursor === 0);
     q("next").disabled = !graph || Boolean(finished);
-    q("play").textContent = timer === null ? "Phát" : "Tạm dừng";
-    q("play").setAttribute("aria-pressed", String(timer !== null));
+    renderPlayButton();
     renderResult(path);
 
     const progress = q("progress");
     const message = q("message");
     if (!graph) {
-      tableBody.replaceChildren();
       q("graph").replaceChildren();
       q("counts").textContent = "";
       progress.textContent = "Kiểm tra đầu vào";
@@ -158,8 +193,10 @@ export function mountPanel(root, initialGraph) {
       sourceId: source.value, targetId: target.value,
       currentEdgeId: step?.edgeId, pathEdgeIds: path?.edgeIds ?? []
     });
-    renderRows(tableBody, graph.nodes, finished ? result.distances : distances,
-      finished ? result.predecessors : predecessors, step?.to);
+    if (refreshTable) {
+      updateRows(rows, finished ? result.distances : distances,
+        finished ? result.predecessors : predecessors, step?.to);
+    }
     if (errorText) {
       progress.textContent = "Lỗi tính toán";
       message.textContent = errorText;
@@ -179,8 +216,11 @@ export function mountPanel(root, initialGraph) {
   }
 
   function advance() {
-    if (cursor <= result.steps.length) moveOne(1);
-    if (cursor > result.steps.length) pause();
+    if (cursor < result.steps.length) moveOne(1);
+    else {
+      finished = true;
+      pause();
+    }
     render();
   }
 
@@ -194,35 +234,42 @@ export function mountPanel(root, initialGraph) {
 
   on("run", "click", () => {
     pause();
-    if (solve()) {
-      // Giữ bảng bước cuối để có thể lùi từ kết quả, kể cả khi có chu trình âm.
-      while (cursor <= result.steps.length) moveOne(1);
-    }
+    if (solve(false)) finished = true;
     render();
   });
   on("first", "click", () => {
     pause();
     rewind();
-    solve();
+    solve(true);
     render();
   });
   on("next", "click", () => {
     pause();
-    if (solve()) advance();
+    if (solve(true)) advance();
     else render();
   });
   on("prev", "click", () => {
     pause();
-    if (cursor > 0) moveOne(-1);
+    if (finished) {
+      // Kết quả cuối có thể chứa −∞. Khôi phục bảng ngay trước phép kiểm tra âm.
+      if (solve(true)) {
+        while (cursor < result.steps.length) moveOne(1);
+        finished = false;
+      }
+    } else if (cursor > 0) moveOne(-1);
     render();
   });
   on("play", "click", () => {
-    if (timer !== null) pause();
-    else if (solve()) {
-      if (cursor > result.steps.length) rewind();
-      startTimer();
+    if (timer !== null) {
+      pause();
+      renderPlayButton();
+      return;
     }
-    render();
+    const enteringPlayback = finished || !hasTrace;
+    if (finished) rewind();
+    if (solve(true)) startTimer();
+    if (enteringPlayback || errorText) render();
+    else renderPlayButton();
   });
   on("speed", "change", () => {
     if (timer !== null) {
@@ -232,13 +279,14 @@ export function mountPanel(root, initialGraph) {
   });
   on("reset", "click", () => { clearRun(); render(); });
   on("source", "change", () => { clearRun(); render(); });
-  on("target", "change", render);
+  on("target", "change", () => render(false));
 
   function setGraph(nextGraph) {
     if (listeners.signal.aborted) return;
     const check = validateGraph(nextGraph);
     graph = check.ok ? structuredClone(nextGraph) : null;
     const nodes = graph?.nodes ?? [];
+    rows = buildRows(tableBody, nodes);
     const hasId = value => nodes.some(node => node.id === value);
     const preferredSource = hasId(source.value) ? source.value : (hasId("S") ? "S" : nodes[0]?.id);
     const preferredTarget = hasId(target.value) ? target.value : (hasId("T") ? "T" : nodes.at(-1)?.id);
@@ -250,5 +298,18 @@ export function mountPanel(root, initialGraph) {
   }
 
   setGraph(initialGraph);
-  return { setGraph, destroy() { pause(); listeners.abort(); } };
+  function destroy() {
+    if (listeners.signal.aborted) return;
+    pause();
+    listeners.abort();
+    mountedPanels.delete(panel);
+    graph = null;
+    result = null;
+    rows.clear();
+    distances.clear();
+    predecessors.clear();
+  }
+  const controller = { setGraph, destroy };
+  mountedPanels.set(panel, controller);
+  return controller;
 }

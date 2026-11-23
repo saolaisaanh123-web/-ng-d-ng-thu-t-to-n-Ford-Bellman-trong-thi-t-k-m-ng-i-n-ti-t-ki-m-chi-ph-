@@ -1,7 +1,7 @@
 # Phần thiết kế của Phan Đức Hoàng · 51.01.104.131
 
 **Ứng dụng thuật toán Ford–Bellman trong thiết kế mạng điện tiết kiệm chi phí**
-Tài liệu khảo sát ban đầu, lưu để đối chiếu quy định và lịch sử thiết kế. Mạng bốn trạm và phân ranh file bên dưới thuộc đề xuất ban đầu. Khi chạy thử, ghép code hoặc làm slide, dùng [hợp đồng hiện hành](hop-dong.md), [mạng năm trạm đã kiểm chứng](kiem-thu.md) và [kịch bản thuyết trình cập nhật](../Slides/hoang-demo.md).
+Tài liệu khảo sát ban đầu, lưu để đối chiếu quy định và lịch sử thiết kế. Mạng bốn trạm và phân công theo tệp bên dưới thuộc đề xuất ban đầu. Khi chạy thử, ghép code hoặc làm slide, dùng [hợp đồng hiện hành](hop-dong.md), [mạng năm trạm đã kiểm chứng](kiem-thu.md) và [kịch bản thuyết trình cập nhật](../Slides/hoang-demo.md).
 
 ## 1. Đối chiếu ba tài liệu
 
@@ -19,7 +19,7 @@ Tài liệu khảo sát ban đầu, lưu để đối chiếu quy định và l�
 
 Câu hỏi thực nghiệm là “Với danh sách tuyến được phép dùng, vận chuyển một lượng điện quy ước 1 MWh từ S đến T theo tuyến nào có tổng phí nhỏ nhất?”. Mỗi đỉnh đại diện một trạm, mỗi cung đại diện một lựa chọn chuyển tiếp. Đề xuất dùng phí vận hành giả định tính bằng **nghìn đồng cho cùng một lượt 1 MWh**. Giả định phí cộng được qua các chặng, tuyến khả dụng trong suốt lượt tính. Không có dữ liệu biểu giá hay số đo vận hành trong repo. Chế độ thông thường dùng số không âm. Kịch bản ưu đãi riêng cho phép phí ròng âm theo chiều, đánh dấu rõ là giả định kinh tế.
 
-Bellman–Ford phù hợp vì cùng một module có thể tính từ một nguồn, dựng lại tuyến, minh họa nới lỏng và nhận biết chu trình âm tới được. Với mọi trọng số không âm và cần tốc độ, Dijkstra dùng hàng đợi ưu tiên thường thích hợp hơn. Tổng chi phí mua hoặc xây dây để nối tất cả trạm là mục tiêu cây khung nhỏ nhất trên mạng vô hướng liên thông, có thể dùng Prim hoặc Kruskal. Ví dụ tam giác vô hướng SA = 2, ST = 2, AT = 1. Hai đường rẻ nhất từ S đến A và T dùng hai cạnh có tổng 4. Một cây khung dùng SA và AT có tổng 3. Mọi con số trong ví dụ là chi phí quy ước.
+Bellman–Ford phù hợp vì cùng một module có thể tính từ một nguồn, dựng lại tuyến, minh họa nới lỏng và nhận biết chu trình âm tới được. Với mọi trọng số không âm và cần tốc độ, Dijkstra dùng hàng đợi ưu tiên thường thích hợp hơn. Tổng chi phí mua hoặc xây dây để nối tất cả trạm là mục tiêu cây khung nhỏ nhất trên mạng vô hướng liên thông khi chỉ tính chi phí xây các cạnh. Có thể dùng Prim hoặc Kruskal. Ví dụ tam giác vô hướng SA = 2, ST = 2, AT = 1. Hai đường rẻ nhất từ S đến A và T dùng hai cạnh có tổng 4. Một cây khung dùng SA và AT có tổng 3. Mọi con số trong ví dụ là chi phí quy ước.
 
 Kết quả chỉ xếp hạng các tuyến trong mô hình. Thiết kế lưới thực cần xét công suất, phân bố dòng, điện áp, tổn thất, an toàn và nhiều phụ tải đồng thời. Khoản tiết kiệm khi trình bày phải nêu tuyến đối chứng, cùng nguồn, đích, bảng phí và lượng quy ước. Khi biểu giá thay đổi, việc chi phí tối ưu tăng từ 6 lên 7 thể hiện tác động của thay đổi biểu giá.
 
@@ -64,7 +64,7 @@ Chốt cách truyền đồ thị, quy tắc chọn tuyến khi hòa, trạng th
 
 | Mức | Chức năng và dữ liệu | Người thực hiện đề xuất | Nghiệm thu |
 |---|---|---|---|
-| Cốt lõi | Nạp mạng mẫu, chọn S/T, tính chi phí, dựng đường, thông báo đích cô lập hoặc vô hạn dưới | Hoàng phụ trách tính toán và panel | Dữ liệu trong bảng kiểm thử cho đúng trạng thái, tuyến, tổng phí |
+| Cốt lõi | Nạp mạng mẫu, chọn S/T, tính chi phí, dựng đường, thông báo đích không tới được hoặc có chi phí không bị chặn dưới | Hoàng phụ trách tính toán và panel | Dữ liệu trong bảng kiểm thử cho đúng trạng thái, tuyến, tổng phí |
 | Cốt lõi khi ghép | Thêm trạm, thêm tuyến, nhập và sửa phí | Chốt người giữ bộ nhập với Phương. Hoàng cung cấp kiểm tra và ví dụ | ID trùng, chi phí rỗng, đầu cạnh sai bị báo đúng trường. Đổi phí chạy lại được |
 | Nên có | Tiếp/lùi, chạy/tạm dừng, chỉnh tốc độ, đặt lại, bảng khoảng cách và tiền nhiệm, đánh dấu cạnh | Hoàng làm điều khiển panel, phối hợp CSS | Tạm dừng giữ nguyên bước, lùi rồi tiến cho cùng bảng. Trạng thái có cả chữ và nét |
 | Mở rộng ưu tiên | Đổi một chi phí rồi so hai kết quả hoặc khóa một tuyến | Hoàng cung cấp cặp dữ liệu, nhóm duyệt phần nhập/so sánh | Đổi đúng một trường, công bố cả tuyến và tổng trước/sau, khôi phục mẫu được |

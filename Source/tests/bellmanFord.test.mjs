@@ -225,3 +225,45 @@ test('16 · Hai chi phí hữu hạn cộng thành giá trị vượt miền Num
   const graph = network(['S','A','T'], [['S','A',Number.MAX_VALUE], ['A','T',Number.MAX_VALUE]]);
   assert.throws(() => runBellmanFord(graph, 'S'), {code: 'COST_OUT_OF_RANGE'});
 });
+
+test('17 · Phí thập phân đồng hạng và chu trình tổng đúng bằng 0', () => {
+  const ties = network(['S','A','T'], [['S','A',0.1], ['A','T',0.2], ['S','T',0.3]]);
+  const result = runBellmanFord(ties, 'S');
+  finite(result, 'T', ['S','A','T'], ['e1','e2'], 0.3);
+  const net = network(['S','A','B','C'], [
+    ['S','A',0], ['A','B',-0.1], ['B','C',-0.2], ['C','A',0.3]
+  ], 'net');
+  const balanced = runBellmanFord(net, 'S');
+  assert.equal(balanced.negativeCycle, false);
+  finite(balanced, 'C', ['S','A','B','C'], ['e1','e2','e3'], -0.3);
+  net.edges[3].cost = 0.2999999999999999;
+  noRoute(runBellmanFord(net, 'S'), 'C', 'unbounded');
+});
+
+test('18 · Cảnh báo khi một khoản phí khác 0 bị mất trong tổng', () => {
+  const graph = network(['S','A'], [['S','A',1e20], ['A','A',-1]], 'net');
+  assert.throws(() => runBellmanFord(graph, 'S'), { code: 'COST_OUT_OF_RANGE' });
+  const precise = network(['S','A','T'], [['S','A',1e20], ['A','T',1e20]]);
+  finite(runBellmanFord(precise, 'S'), 'T', ['S','A','T'], ['e1','e2'], 2e20);
+});
+
+test('19 · Đổi phí nhiều lần và đảo thứ tự cung vẫn cho đúng chi phí', () => {
+  const graph = demo();
+  const e2 = graph.edges.find(edge => edge.id === 'e2');
+  for (const [cost, total] of [[1,6], [5,7], [0,5], [2,7], [1,6]]) {
+    e2.cost = cost;
+    graph.edges.reverse();
+    assert.equal(reconstructPath(runBellmanFord(graph, 'S'), 'T').totalCost, total);
+  }
+});
+
+test('20 · Phát hiện đầu vào truy vết sai và chuỗi tiền nhiệm bị hỏng', () => {
+  for (const result of [null, undefined, {}]) {
+    assert.throws(() => reconstructPath(result, 'T'), { code: 'INVALID_RESULT' });
+  }
+  const result = runBellmanFord(demo(), 'S');
+  result.predecessors.set('T', {nodeId:'A'});
+  assert.throws(() => reconstructPath(result, 'T'), { code: 'INVALID_RESULT' });
+  result.predecessors.set('T', {nodeId:'T', edgeId:'e3'});
+  assert.throws(() => reconstructPath(result, 'T'), { code: 'INVALID_RESULT' });
+});

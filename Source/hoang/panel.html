@@ -10,7 +10,10 @@
         <h2 id="bf-map-title">Sơ đồ mạng điện</h2>
         <span class="bf-meta" id="bf-counts"></span>
       </div>
-      <svg class="bf-graph" id="bf-graph" role="img" aria-label="Sơ đồ các trạm và chi phí trên từng cung"></svg>
+      <label class="bf-map-zoom"><input type="checkbox" aria-controls="bf-map-view"> Phóng to sơ đồ</label>
+      <div id="bf-map-view" class="bf-map-view" role="region" aria-label="Sơ đồ mạng điện" tabindex="0">
+        <svg class="bf-graph" id="bf-graph" role="img" aria-label="Sơ đồ các trạm và chi phí trên từng cung"></svg>
+      </div>
       <div class="bf-legend" id="bf-legend" aria-label="Chú giải sơ đồ">
         <span><i class="bf-key bf-key-line" aria-hidden="true"></i>Cung truyền tải</span>
         <span><i class="bf-key bf-key-current" aria-hidden="true"></i>Đang xét</span>
