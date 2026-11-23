@@ -10,7 +10,7 @@ Bộ [PowerPoint của Hoàng](Bellman-Ford-Phan-Duc-Hoang.pptx) có bảy slide
 |---|---|---:|
 | 1. Câu hỏi S → T | Cho người xem dò ba hành trình trên mạng năm trạm trước khi biết kết quả. | 24 giây |
 | 2. Mô hình hóa | Ghép hai trạm và một tuyến truyền tải với hai đỉnh B, A và cung B → A có phí 1 nghìn đồng/MWh. | 25 giây |
-| 3. Nới lỏng | Theo lưu đồ khởi tạo, so sánh ứng viên, lưu tiền nhiệm, dừng, kiểm tra chu trình âm và truy vết. | 39 giây |
+| 3. Nới lỏng | Theo một lần nới lỏng, rồi chỉ hai nhánh dừng. Một lượt trọn vẹn không đổi nhãn thì dừng sớm. Nếu hết số lượt mà chưa xác nhận ổn định, kiểm tra chu trình âm. | 39 giây |
 | 4. Tuyến rẻ nhất ở biểu phí cơ sở | Lần theo các cung tô đậm và cộng 2 + 1 + 3. | 30 giây |
 | 5. Đổi biểu phí | So hai sơ đồ cùng bố cục. Phí B→A tăng lên 5. Theo biểu phí mới, tuyến cũ tốn 10, tuyến mới tốn 7. | 31 giây |
 | 6. Quan sát panel | Theo năm dấu trên ảnh chụp chương trình, từ nguồn/đích đến bảng và kết quả. | 31 giây |
@@ -31,6 +31,8 @@ Từ S có ba nhánh đầu tiên. B chỉ đi tiếp được sang A, A và C c
 Đã chạy trực tiếp `runBellmanFord` và `reconstructPath` với tệp `Source/data/sampleGraph.json`, chỉ sửa phí của e2 trong bộ nhớ cho lần chạy thứ hai. Theo thứ tự S, A, B, C, T, các nhãn cuối lần lượt là **[0, 3, 2, 3, 6]** và **[0, 4, 2, 3, 7]**. Hai tuyến trả về có mã cung [e1, e2, e3] và [e4, e3]. Khi đặt T làm nguồn, kết quả cho S là `unreachable`.
 
 ## Kịch bản demo trực tiếp 7 phút
+
+Trước khi trình chiếu, nhấp phải vào `Source/hoang/demo.html` trong VS Code và chọn **Open with Live Server**. Chọn **Mạng 5 trạm · Phí cơ sở**, nguồn **S** và đích **T**. Để minh họa slide 6, nhấn **Từng bước** rồi **Tiếp** hai lần. Hàng A sẽ hiện chi phí **3**, tiền nhiệm **B**, cung **e2**.
 
 | Thời gian | Thao tác và bàn giao lời nói | Bằng chứng trên màn hình |
 |---|---|---|
