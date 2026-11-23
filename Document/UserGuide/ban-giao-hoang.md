@@ -4,7 +4,7 @@
 
 ## Mở trên máy cá nhân
 
-Nếu nhận bản ZIP, hãy giải nén cả thư mục. Nếu dùng Git, chọn nhánh `hoang/trien-khai-bellman-ford`. Thư mục gốc của dự án chứa `Source` và `Document`.
+Nếu nhận bản ZIP, hãy giải nén cả thư mục. Nếu dùng Git, chọn nhánh `main`. Thư mục gốc của dự án chứa `Source` và `Document`.
 
 ### Dùng Live Server trong VS Code
 
